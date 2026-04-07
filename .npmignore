@@ -1,0 +1,12 @@
+src
+node_modules
+.github
+.vscode
+.eslintrc.json
+.prettierrc.json
+tsconfig.json
+*.log
+.DS_Store
+.env*
+coverage
+.editorconfig

@@ -1,0 +1,29 @@
+name: supawake
+
+on:
+  schedule:
+    # Every 3 days at 06:00 UTC
+    - cron: '0 6 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install supawake
+        run: npm install -g supawake
+
+      - name: Write config from secret
+        run: |
+          mkdir -p "$HOME/.config/supawake"
+          echo "$SUPAWAKE_CONFIG" > "$HOME/.config/supawake/config.json"
+        env:
+          SUPAWAKE_CONFIG: ${{ secrets.SUPAWAKE_CONFIG }}
+
+      - name: Ping all projects
+        run: supawake ping
