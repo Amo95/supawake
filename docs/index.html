@@ -8,38 +8,175 @@
   <meta property="og:title" content="supawake — Keep your Supabase projects alive" />
   <meta property="og:description" content="A tiny CLI that prevents Supabase free-tier auto-pause by pinging your databases on a schedule." />
   <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700,800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0a0a0a;
-      --surface: #141414;
-      --border: #2a2a2a;
-      --text: #e5e5e5;
-      --text-muted: #888;
-      --accent: #3ecf8e;
-      --accent-dim: #2a9d6a;
-      --code-bg: #1a1a2e;
+      --bg: #ffffff;
+      --bg-soft: #f8f9fb;
+      --bg-invert: #0f1117;
+      --surface: #fafbfc;
+      --border-surface: #f0f1f3;
+      --border-sub: #f5f5f7;
+      --text-main: #0f1117;
+      --text-soft: #525866;
+      --text-muted: #99a0ad;
+      --brand: #0d9373;
+      --brand-soft: rgba(13, 147, 115, 0.04);
+      --brand-hover: #0ba882;
+      --code-bg: #f5f6f8;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b0d11;
+        --bg-soft: #12141a;
+        --bg-invert: #ffffff;
+        --surface: #0f1117;
+        --border-surface: #1e2028;
+        --border-sub: #181a20;
+        --text-main: #ececef;
+        --text-soft: #9b9faa;
+        --text-muted: #5f6470;
+        --brand: #18e299;
+        --brand-soft: rgba(24, 226, 153, 0.04);
+        --brand-hover: #2cf0a8;
+        --code-bg: #10131a;
+      }
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg);
-      color: var(--text);
+      color: var(--text-main);
       line-height: 1.6;
-      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     .container {
-      max-width: 720px;
+      max-width: 1022px;
       margin: 0 auto;
       padding: 0 24px;
+    }
+    @media (min-width: 768px) { .container { padding: 0 32px; } }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes terminal-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    @keyframes dash-move {
+      0% { stroke-dashoffset: 0; }
+      100% { stroke-dashoffset: -20; }
+    }
+    @keyframes dot-pulse {
+      0%, 100% { opacity: 0.08; }
+      50% { opacity: 0.2; }
+    }
+    @keyframes scroll-left {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Hero background — moving dots + snake lines */
+    .hero-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: -1;
+      opacity: 0.5;
+    }
+    .hero-bg-track {
+      display: flex;
+      width: 200%;
+      height: 100%;
+      animation: scroll-left 40s linear infinite;
+    }
+    .hero-bg-tile {
+      width: 50%;
+      height: 100%;
+      flex-shrink: 0;
+    }
+    .hero-bg-tile svg {
+      width: 100%;
+      height: 100%;
+    }
+    .hero-dot {
+      fill: var(--text-muted);
+      opacity: 0.2;
+    }
+    .hero-dot-accent {
+      fill: var(--brand);
+      opacity: 0.25;
+      animation: dot-pulse 3s ease-in-out infinite;
+    }
+    .hero-snake {
+      fill: none;
+      stroke: var(--brand);
+      stroke-width: 1;
+      stroke-linecap: round;
+      stroke-dasharray: 6 14;
+      opacity: 0.12;
+    }
+    .hero-snake-2 {
+      fill: none;
+      stroke: var(--text-muted);
+      stroke-width: 0.8;
+      stroke-linecap: round;
+      stroke-dasharray: 4 18;
+      opacity: 0.08;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     /* Nav */
     nav {
-      padding: 20px 0;
-      border-bottom: 1px solid var(--border);
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 12px 0;
+      background: color-mix(in srgb, var(--bg) 85%, transparent);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border-bottom: 1px solid var(--border-sub);
+      animation: fadeIn 0.5s ease;
     }
     nav .container {
       display: flex;
@@ -47,395 +184,1204 @@
       align-items: center;
     }
     .logo {
-      font-size: 1.25rem;
+      font-size: 1rem;
       font-weight: 700;
-      color: var(--accent);
+      color: var(--text-main);
       text-decoration: none;
+      letter-spacing: -0.025em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-mark {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+    }
+    .logo-mark svg { width: 28px; height: 28px; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
     .nav-links a {
-      color: var(--text-muted);
+      color: var(--text-soft);
       text-decoration: none;
-      margin-left: 24px;
-      font-size: 0.9rem;
-      transition: color 0.2s;
+      font-size: 0.84rem;
+      font-weight: 500;
+      padding: 7px 14px;
+      border-radius: 8px;
+      transition: all 0.15s ease;
     }
-    .nav-links a:hover { color: var(--text); }
+    .nav-links a:hover { color: var(--text-main); background: var(--bg-soft); }
+    .nav-btn {
+      background: var(--bg-invert) !important;
+      color: var(--bg) !important;
+      font-weight: 600 !important;
+      padding: 7px 18px !important;
+      border-radius: 8px;
+      margin-left: 8px;
+      transition: all 0.15s ease;
+    }
+    .nav-btn:hover { opacity: 0.85; }
 
     /* Hero */
     .hero {
-      padding: 100px 0 80px;
+      padding: 160px 0 80px;
       text-align: center;
+      position: relative;
+      overflow: hidden;
     }
-    .badge {
-      display: inline-block;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 6px 16px;
-      font-size: 0.8rem;
-      color: var(--accent);
-      margin-bottom: 24px;
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--brand), transparent);
+      opacity: 0.2;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-soft);
+      border: 1px solid var(--border-surface);
+      border-radius: 100px;
+      padding: 5px 14px 5px 8px;
+      font-size: 0.78rem;
+      color: var(--text-soft);
+      font-weight: 500;
+      margin-bottom: 28px;
+      animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+      transition: border-color 0.2s ease;
+    }
+    .hero-badge:hover { border-color: var(--brand); }
+    .hero-badge-icon {
+      width: 22px;
+      height: 22px;
+      background: var(--brand-soft);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hero-badge-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--brand);
+      border-radius: 50%;
+      animation: pulse-dot 2.5s ease infinite;
     }
     h1 {
-      font-size: 3rem;
+      font-size: 3.25rem;
       font-weight: 800;
-      letter-spacing: -0.03em;
+      letter-spacing: -0.045em;
+      line-height: 1.08;
       margin-bottom: 20px;
-      line-height: 1.1;
+      animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+      color: var(--text-main);
     }
-    h1 .accent { color: var(--accent); }
-    .subtitle {
-      font-size: 1.15rem;
-      color: var(--text-muted);
-      max-width: 520px;
-      margin: 0 auto 40px;
+    h1 .accent { color: var(--brand); }
+    .hero-desc {
+      font-size: 1.08rem;
+      color: var(--text-soft);
+      max-width: 480px;
+      margin: 0 auto 36px;
+      line-height: 1.7;
+      font-weight: 400;
+      animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
     }
-    .cta-row {
+    .hero-actions {
       display: flex;
       gap: 12px;
       justify-content: center;
       flex-wrap: wrap;
+      animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both;
     }
     .btn {
       display: inline-flex;
       align-items: center;
-      padding: 12px 28px;
-      border-radius: 8px;
-      font-size: 0.95rem;
+      gap: 8px;
+      padding: 11px 22px;
+      border-radius: 10px;
+      font-size: 0.88rem;
       font-weight: 600;
       text-decoration: none;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
       cursor: pointer;
       border: none;
+      font-family: inherit;
     }
+    .btn svg { width: 16px; height: 16px; }
     .btn-primary {
-      background: var(--accent);
-      color: #000;
+      background: var(--bg-invert);
+      color: var(--bg);
     }
-    .btn-primary:hover { background: #4ee09e; }
-    .btn-secondary {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
+    .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-main);
+      border: 1px solid var(--border-surface);
     }
-    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-ghost:hover { background: var(--bg-soft); border-color: var(--text-muted); transform: translateY(-1px); }
 
-    /* Install snippet */
-    .install-box {
-      margin: 48px auto 0;
-      max-width: 420px;
+    /* Terminal install */
+    .terminal {
+      margin: 44px auto 0;
+      max-width: 440px;
       background: var(--code-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px 20px;
+      border: 1px solid var(--border-surface);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.32s both;
+    }
+    .terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-sub);
+    }
+    .terminal-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--border-surface);
+    }
+    .terminal-body {
+      padding: 14px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
     }
-    .install-box code {
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 0.9rem;
-      color: var(--accent);
+    .terminal-body code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.84rem;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    .copy-btn {
+    .terminal-body .prompt { color: var(--brand); user-select: none; }
+    .terminal-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 16px;
+      background: var(--brand);
+      animation: terminal-blink 1.2s step-end infinite;
+      margin-left: 2px;
+      vertical-align: middle;
+    }
+    .terminal-copy {
       background: none;
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-surface);
       color: var(--text-muted);
-      padding: 6px 12px;
+      padding: 5px 7px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 0.8rem;
-      transition: all 0.2s;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
     }
-    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .terminal-copy:hover { border-color: var(--brand); color: var(--brand); }
+    .terminal-copy svg { width: 14px; height: 14px; }
 
-    /* Problem / Solution */
+    /* Sections */
     .section {
-      padding: 60px 0;
-      border-top: 1px solid var(--border);
+      padding: 72px 0;
+      position: relative;
+    }
+    .section + .section { border-top: 1px solid var(--border-sub); }
+
+    /* Section decorative lines */
+    .section-deco {
+      position: absolute;
+      pointer-events: none;
+      z-index: -1;
+    }
+    .section-deco svg {
+      overflow: visible;
+    }
+    .section-deco line, .section-deco path {
+      stroke: var(--border-surface);
+      stroke-width: 1;
+      stroke-dasharray: 6 4;
+      animation: dash-move 1.5s linear infinite;
+    }
+
+    /* Glow line between sections */
+    .section-glow-line {
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--brand), transparent);
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    .section:hover .section-glow-line { opacity: 0.15; }
+    .section-eyebrow {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--brand);
+      margin-bottom: 10px;
     }
     .section h2 {
-      font-size: 1.8rem;
+      font-size: 1.9rem;
       font-weight: 700;
-      margin-bottom: 16px;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.035em;
+      margin-bottom: 10px;
+      line-height: 1.15;
     }
-    .section p {
-      color: var(--text-muted);
-      margin-bottom: 16px;
-      font-size: 1rem;
+    .section-subtitle {
+      color: var(--text-soft);
+      font-size: 0.95rem;
+      margin-bottom: 40px;
+      max-width: 480px;
+      line-height: 1.65;
     }
 
-    /* Features grid */
-    .features {
+    /* Problem / Solution */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 36px;
+    }
+    .compare-card {
+      border: none;
+      border-radius: var(--radius-xl);
+      padding: 0;
+    }
+    .compare-card-inner {
+      background: var(--surface);
+      border-radius: calc(var(--radius-xl) - 2px);
+      padding: 28px;
+      height: 100%;
+    }
+    .compare-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+    }
+    .compare-label svg { width: 12px; height: 12px; }
+    .compare-card.without .compare-label {
+      color: #e5484d;
+      background: rgba(229, 72, 77, 0.04);
+    }
+    .compare-card.with .compare-label {
+      color: var(--brand);
+      background: var(--brand-soft);
+    }
+    .compare-card.with { }
+    .compare-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+    .compare-card p {
+      font-size: 0.85rem;
+      color: var(--text-soft);
+      line-height: 1.6;
+    }
+    .compare-list {
+      list-style: none;
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .compare-list li {
+      font-size: 0.84rem;
+      color: var(--text-soft);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      line-height: 1.45;
+    }
+    .compare-list li svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .compare-card.without .compare-list li svg { color: #e5484d; }
+    .compare-card.with .compare-list li svg { color: var(--brand); }
+
+    /* Features */
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .feature-card {
+      border: none;
+      border-radius: var(--radius-xl);
+      padding: 0;
+      transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .feature-card:hover { transform: translateY(-2px); }
+    .feature-card-inner {
+      background: var(--surface);
+      border-radius: calc(var(--radius-xl) - 2px);
+      padding: 28px;
+      height: 100%;
+    }
+    .feature-icon-wrap {
+      width: 40px;
+      height: 40px;
+      background: var(--brand-soft);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+      color: var(--brand);
+      transition: all 0.25s ease;
+    }
+    .feature-card:hover .feature-icon-wrap { background: color-mix(in srgb, var(--brand) 6%, transparent); }
+    .feature-icon-wrap svg { width: 20px; height: 20px; }
+    .feature-card h3 {
+      font-size: 0.92rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+    .feature-card p {
+      font-size: 0.84rem;
+      color: var(--text-soft);
+      line-height: 1.6;
+    }
+
+    /* Steps */
+    .steps-container {
+      margin-top: 40px;
+      position: relative;
+    }
+    .steps-line {
+      position: absolute;
+      left: 19px;
+      top: 44px;
+      bottom: 44px;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--brand), var(--border-surface));
+    }
+    .step {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      padding: 20px 0;
+      position: relative;
+    }
+    .step-marker {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid var(--border-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--brand);
+      z-index: 1;
+      transition: all 0.25s ease;
+    }
+    .step:hover .step-marker { border-color: var(--brand); background: var(--brand-soft); }
+    .step-body { padding-top: 8px; }
+    .step-body h3 {
+      font-size: 0.92rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
+    }
+    .step-body p {
+      font-size: 0.84rem;
+      color: var(--text-soft);
+      line-height: 1.55;
+    }
+    .step-body code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--brand);
+      background: var(--brand-soft);
+      padding: 2px 8px;
+      border-radius: 5px;
+    }
+
+    /* Code block */
+    .code-window {
+      background: var(--code-bg);
+      border: 1px solid var(--border-surface);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-top: 32px;
+    }
+    .code-window-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-sub);
+    }
+    .code-window-bar span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--border-surface);
+    }
+    .code-window pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.9;
+      padding: 20px 24px;
+      color: var(--text-soft);
+      overflow-x: auto;
+    }
+    .code-window .c { color: var(--text-muted); }
+    .code-window .g { color: var(--brand); }
+
+    /* Callout */
+    .callout {
+      border: none;
+      border-radius: var(--radius-xl);
+      padding: 0;
+      margin-top: 32px;
+    }
+    .callout-inner {
+      background: var(--surface);
+      border-radius: calc(var(--radius-xl) - 2px);
+      padding: 28px;
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    .callout-icon {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      background: var(--brand-soft);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--brand);
+    }
+    .callout-icon svg { width: 22px; height: 22px; }
+    .callout h3 {
+      font-size: 0.92rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .callout p {
+      font-size: 0.84rem;
+      color: var(--text-soft);
+      line-height: 1.6;
+    }
+    .callout a { color: var(--brand); text-decoration: none; font-weight: 500; }
+    .callout a:hover { text-decoration: underline; }
+
+    /* CLI table */
+    .cli-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+    }
+    .cli-table tr {
+      border-bottom: 1px solid var(--border-sub);
+      transition: background 0.15s ease;
+    }
+    .cli-table tr:last-child { border-bottom: none; }
+    .cli-table tr:hover { background: var(--bg-soft); }
+    .cli-table td {
+      padding: 14px 0;
+      font-size: 0.86rem;
+      vertical-align: top;
+    }
+    .cli-table td:first-child {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--brand);
+      white-space: nowrap;
+      padding-right: 32px;
+      width: 240px;
+    }
+    .cli-table td:last-child { color: var(--text-soft); }
+
+    /* Footer */
+    footer {
+      padding: 32px 0;
+      border-top: 1px solid var(--border-sub);
+    }
+    footer .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    footer p {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+    footer a { color: var(--text-soft); text-decoration: none; transition: color 0.15s ease; }
+    footer a:hover { color: var(--text-main); }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .footer-links a {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .footer-links a svg { width: 14px; height: 14px; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      h1 { font-size: 2.1rem; }
+      .hero { padding: 120px 0 56px; }
+      .compare-grid, .features-grid { grid-template-columns: 1fr; }
+      .terminal { max-width: 100%; }
+      .callout-inner { flex-direction: column; }
+      footer .container { flex-direction: column; gap: 16px; text-align: center; }
+      .cli-table td:first-child { width: auto; display: block; padding-right: 0; padding-bottom: 0; }
+      .cli-table td:last-child { display: block; padding-top: 2px; }
+      .section h2 { font-size: 1.5rem; }
+      .nav-links a:not(.nav-btn) { display: none; }
+    }
+    /* Skeleton loader */
+    /* Skeleton loader */
+    .skeleton-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9999;
+      background: var(--bg);
+      overflow-y: auto;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    .skeleton-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .skeleton-inner {
+      max-width: 1022px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+    .skeleton-bar {
+      border-radius: 6px;
+      background: var(--border-sub);
+      background-image: linear-gradient(
+        90deg,
+        var(--border-sub) 0%,
+        var(--border-surface) 40%,
+        var(--border-sub) 80%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.8s ease-in-out infinite;
+    }
+    /* Skeleton nav */
+    .sk-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border-sub);
+    }
+    .sk-nav-links { display: flex; gap: 16px; }
+    /* Skeleton hero */
+    .sk-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 140px 0 80px;
+      gap: 16px;
+    }
+    /* Skeleton section */
+    .sk-section {
+      padding: 72px 0;
+      border-top: 1px solid var(--border-sub);
+    }
+    .sk-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 16px;
       margin-top: 32px;
     }
-    .feature-card {
+    .sk-card {
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 24px;
-      transition: border-color 0.2s;
-    }
-    .feature-card:hover { border-color: var(--accent-dim); }
-    .feature-icon {
-      font-size: 1.5rem;
-      margin-bottom: 12px;
-    }
-    .feature-card h3 {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    .feature-card p {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 0;
-    }
-
-    /* Code blocks */
-    .code-block {
-      background: var(--code-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 20px 24px;
-      margin: 20px 0;
-      overflow-x: auto;
-    }
-    .code-block pre {
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 0.85rem;
-      line-height: 1.7;
-      color: var(--text);
-    }
-    .code-block .comment { color: #555; }
-    .code-block .cmd { color: var(--accent); }
-
-    /* How it works */
-    .steps {
-      margin-top: 32px;
+      border-radius: var(--radius-xl);
+      padding: 28px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 12px;
     }
-    .step {
+    .sk-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      margin-top: 32px;
+    }
+    .sk-step {
       display: flex;
       gap: 16px;
       align-items: flex-start;
     }
-    .step-num {
-      flex-shrink: 0;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: var(--surface);
-      border: 1px solid var(--accent-dim);
-      color: var(--accent);
+    .sk-code {
+      border-radius: var(--radius-lg);
+      margin-top: 32px;
+    }
+    .sk-table-row {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.85rem;
-      font-weight: 700;
+      gap: 32px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border-sub);
     }
-    .step-content h3 {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-    .step-content p {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      margin: 0;
-    }
-
-    /* GitHub Actions */
-    .gh-action-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 24px;
-      margin-top: 24px;
-    }
-    .gh-action-box h3 {
-      font-size: 1rem;
-      margin-bottom: 8px;
-    }
-    .gh-action-box p {
-      font-size: 0.9rem;
-    }
-
-    /* Footer */
-    footer {
-      padding: 40px 0;
-      border-top: 1px solid var(--border);
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-    }
-    footer a {
-      color: var(--accent);
-      text-decoration: none;
-    }
-    footer a:hover { text-decoration: underline; }
-
-    /* Responsive */
-    @media (max-width: 600px) {
-      h1 { font-size: 2rem; }
-      .features { grid-template-columns: 1fr; }
-      .hero { padding: 60px 0 48px; }
-      .install-box { flex-direction: column; text-align: center; }
+    @media (max-width: 640px) {
+      .sk-grid { grid-template-columns: 1fr; }
+      .sk-hero { padding: 100px 0 48px; }
     }
   </style>
 </head>
 <body>
 
+  <!-- Skeleton loading screen -->
+  <div class="skeleton-screen" id="skeleton">
+    <div class="skeleton-inner">
+      <!-- Nav -->
+      <div class="sk-nav">
+        <div class="skeleton-bar" style="width:100px;height:20px"></div>
+        <div class="sk-nav-links">
+          <div class="skeleton-bar" style="width:56px;height:14px"></div>
+          <div class="skeleton-bar" style="width:72px;height:14px"></div>
+          <div class="skeleton-bar" style="width:40px;height:14px"></div>
+          <div class="skeleton-bar" style="width:76px;height:28px;border-radius:8px"></div>
+        </div>
+      </div>
+      <!-- Hero -->
+      <div class="sk-hero">
+        <div class="skeleton-bar" style="width:160px;height:28px;border-radius:100px"></div>
+        <div class="skeleton-bar" style="width:80%;height:44px;border-radius:8px"></div>
+        <div class="skeleton-bar" style="width:55%;height:44px;border-radius:8px"></div>
+        <div class="skeleton-bar" style="width:65%;height:16px;margin-top:8px"></div>
+        <div class="skeleton-bar" style="width:45%;height:16px"></div>
+        <div style="display:flex;gap:12px;margin-top:12px">
+          <div class="skeleton-bar" style="width:150px;height:44px;border-radius:10px"></div>
+          <div class="skeleton-bar" style="width:150px;height:44px;border-radius:10px"></div>
+        </div>
+        <div class="skeleton-bar" style="width:400px;max-width:100%;height:72px;border-radius:16px;margin-top:12px"></div>
+      </div>
+      <!-- Problem section -->
+      <div class="sk-section">
+        <div class="skeleton-bar" style="width:90px;height:12px;margin-bottom:12px"></div>
+        <div class="skeleton-bar" style="width:340px;max-width:100%;height:28px;margin-bottom:12px;border-radius:8px"></div>
+        <div class="skeleton-bar" style="width:420px;max-width:100%;height:14px"></div>
+        <div class="sk-grid">
+          <div class="sk-card">
+            <div class="skeleton-bar" style="width:120px;height:20px;border-radius:6px"></div>
+            <div class="skeleton-bar" style="width:70%;height:16px"></div>
+            <div class="skeleton-bar" style="width:90%;height:12px"></div>
+            <div class="skeleton-bar" style="width:80%;height:12px"></div>
+            <div class="skeleton-bar" style="width:85%;height:12px"></div>
+          </div>
+          <div class="sk-card">
+            <div class="skeleton-bar" style="width:100px;height:20px;border-radius:6px"></div>
+            <div class="skeleton-bar" style="width:65%;height:16px"></div>
+            <div class="skeleton-bar" style="width:88%;height:12px"></div>
+            <div class="skeleton-bar" style="width:75%;height:12px"></div>
+            <div class="skeleton-bar" style="width:82%;height:12px"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Features section -->
+      <div class="sk-section">
+        <div class="skeleton-bar" style="width:70px;height:12px;margin-bottom:12px"></div>
+        <div class="skeleton-bar" style="width:360px;max-width:100%;height:28px;margin-bottom:12px;border-radius:8px"></div>
+        <div class="skeleton-bar" style="width:280px;max-width:100%;height:14px"></div>
+        <div class="sk-grid">
+          <div class="sk-card">
+            <div class="skeleton-bar" style="width:40px;height:40px;border-radius:10px"></div>
+            <div class="skeleton-bar" style="width:60%;height:14px"></div>
+            <div class="skeleton-bar" style="width:90%;height:12px"></div>
+            <div class="skeleton-bar" style="width:75%;height:12px"></div>
+          </div>
+          <div class="sk-card">
+            <div class="skeleton-bar" style="width:40px;height:40px;border-radius:10px"></div>
+            <div class="skeleton-bar" style="width:70%;height:14px"></div>
+            <div class="skeleton-bar" style="width:85%;height:12px"></div>
+            <div class="skeleton-bar" style="width:80%;height:12px"></div>
+          </div>
+          <div class="sk-card">
+            <div class="skeleton-bar" style="width:40px;height:40px;border-radius:10px"></div>
+            <div class="skeleton-bar" style="width:55%;height:14px"></div>
+            <div class="skeleton-bar" style="width:88%;height:12px"></div>
+            <div class="skeleton-bar" style="width:70%;height:12px"></div>
+          </div>
+          <div class="sk-card">
+            <div class="skeleton-bar" style="width:40px;height:40px;border-radius:10px"></div>
+            <div class="skeleton-bar" style="width:65%;height:14px"></div>
+            <div class="skeleton-bar" style="width:82%;height:12px"></div>
+            <div class="skeleton-bar" style="width:78%;height:12px"></div>
+          </div>
+        </div>
+      </div>
+      <!-- How it works section -->
+      <div class="sk-section">
+        <div class="skeleton-bar" style="width:100px;height:12px;margin-bottom:12px"></div>
+        <div class="skeleton-bar" style="width:280px;max-width:100%;height:28px;margin-bottom:12px;border-radius:8px"></div>
+        <div class="skeleton-bar" style="width:380px;max-width:100%;height:14px"></div>
+        <div class="sk-steps">
+          <div class="sk-step">
+            <div class="skeleton-bar" style="width:40px;height:40px;border-radius:50%;flex-shrink:0"></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px;padding-top:8px">
+              <div class="skeleton-bar" style="width:50%;height:14px"></div>
+              <div class="skeleton-bar" style="width:80%;height:12px"></div>
+            </div>
+          </div>
+          <div class="sk-step">
+            <div class="skeleton-bar" style="width:40px;height:40px;border-radius:50%;flex-shrink:0"></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px;padding-top:8px">
+              <div class="skeleton-bar" style="width:45%;height:14px"></div>
+              <div class="skeleton-bar" style="width:75%;height:12px"></div>
+            </div>
+          </div>
+          <div class="sk-step">
+            <div class="skeleton-bar" style="width:40px;height:40px;border-radius:50%;flex-shrink:0"></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px;padding-top:8px">
+              <div class="skeleton-bar" style="width:55%;height:14px"></div>
+              <div class="skeleton-bar" style="width:85%;height:12px"></div>
+            </div>
+          </div>
+        </div>
+        <div class="skeleton-bar sk-code" style="width:100%;height:200px"></div>
+      </div>
+      <!-- CLI section -->
+      <div class="sk-section">
+        <div class="skeleton-bar" style="width:90px;height:12px;margin-bottom:12px"></div>
+        <div class="skeleton-bar" style="width:260px;max-width:100%;height:28px;margin-bottom:24px;border-radius:8px"></div>
+        <div class="sk-table-row">
+          <div class="skeleton-bar" style="width:140px;height:14px"></div>
+          <div class="skeleton-bar" style="width:220px;height:14px"></div>
+        </div>
+        <div class="sk-table-row">
+          <div class="skeleton-bar" style="width:170px;height:14px"></div>
+          <div class="skeleton-bar" style="width:200px;height:14px"></div>
+        </div>
+        <div class="sk-table-row">
+          <div class="skeleton-bar" style="width:120px;height:14px"></div>
+          <div class="skeleton-bar" style="width:180px;height:14px"></div>
+        </div>
+        <div class="sk-table-row">
+          <div class="skeleton-bar" style="width:130px;height:14px"></div>
+          <div class="skeleton-bar" style="width:210px;height:14px"></div>
+        </div>
+        <div class="sk-table-row">
+          <div class="skeleton-bar" style="width:125px;height:14px"></div>
+          <div class="skeleton-bar" style="width:240px;height:14px"></div>
+        </div>
+        <div class="sk-table-row" style="border-bottom:none">
+          <div class="skeleton-bar" style="width:135px;height:14px"></div>
+          <div class="skeleton-bar" style="width:260px;height:14px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <nav>
     <div class="container">
-      <a href="/" class="logo">supawake</a>
+      <a href="/" class="logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 36 42" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M27.9749 1C27.9379 1 27.9008 1 23.9965 4.32453C20.0923 7.64905 12.3218 14.2981 8.54452 17.7585C4.76722 21.2188 5.21853 21.289 5.88295 21.2985C7.41171 21.3203 9.80248 20.8938 15.8167 19.2379C20.3583 17.9874 27.809 15.5024 31.5485 14.4106C35.2881 13.3187 35.0611 13.5926 29.55 17.9399C24.0389 22.2873 13.2506 30.6998 7.53426 35.1927C1.81794 39.6855 1.50056 40.0037 1 40.5535"/><path d="M19.2421 13.5811C17.6484 14.7615 12.4172 19.1185 8.8643 22.8112C7.45729 24.2736 7.23076 25.2409 9.07163 24.8549C15.1463 23.581 19.3958 20.9663 18.4255 21.8979C17.1163 22.9179 14.1488 25.0487 12.4269 26.31C10.7051 27.5713 10.3188 27.8986 9.74592 28.5112"/></svg>
+        </div>
+        supawake
+      </a>
       <div class="nav-links">
         <a href="#features">Features</a>
         <a href="#how-it-works">How it works</a>
-        <a href="https://github.com/amo95/supawake">GitHub</a>
+        <a href="#cli">CLI</a>
+        <a href="https://github.com/amo95/supawake" class="nav-btn">GitHub</a>
       </div>
     </div>
   </nav>
 
   <section class="hero">
+    <div class="hero-bg">
+      <div class="hero-bg-track">
+        <div class="hero-bg-tile">
+          <svg viewBox="0 0 1200 700" preserveAspectRatio="none">
+            <!-- Dot grid — 10 rows, 20 cols, spacing 60 -->
+            <g>
+              <circle cx="30" cy="70" r="1.2" class="hero-dot"/><circle cx="90" cy="70" r="1.2" class="hero-dot"/><circle cx="150" cy="70" r="1.2" class="hero-dot"/><circle cx="210" cy="70" r="1.2" class="hero-dot"/><circle cx="270" cy="70" r="1.2" class="hero-dot"/><circle cx="330" cy="70" r="1.2" class="hero-dot"/><circle cx="390" cy="70" r="1.2" class="hero-dot"/><circle cx="450" cy="70" r="1.2" class="hero-dot"/><circle cx="510" cy="70" r="1.2" class="hero-dot"/><circle cx="570" cy="70" r="1.2" class="hero-dot"/><circle cx="630" cy="70" r="1.2" class="hero-dot"/><circle cx="690" cy="70" r="1.2" class="hero-dot"/><circle cx="750" cy="70" r="1.2" class="hero-dot"/><circle cx="810" cy="70" r="1.2" class="hero-dot"/><circle cx="870" cy="70" r="1.2" class="hero-dot"/><circle cx="930" cy="70" r="1.2" class="hero-dot"/><circle cx="990" cy="70" r="1.2" class="hero-dot"/><circle cx="1050" cy="70" r="1.2" class="hero-dot"/><circle cx="1110" cy="70" r="1.2" class="hero-dot"/><circle cx="1170" cy="70" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="140" r="1.2" class="hero-dot"/><circle cx="90" cy="140" r="1.2" class="hero-dot"/><circle cx="150" cy="140" r="1.2" class="hero-dot"/><circle cx="210" cy="140" r="1.2" class="hero-dot"/><circle cx="270" cy="140" r="1.2" class="hero-dot"/><circle cx="330" cy="140" r="1.2" class="hero-dot"/><circle cx="390" cy="140" r="1.2" class="hero-dot"/><circle cx="450" cy="140" r="1.2" class="hero-dot"/><circle cx="510" cy="140" r="1.2" class="hero-dot"/><circle cx="570" cy="140" r="1.2" class="hero-dot"/><circle cx="630" cy="140" r="1.2" class="hero-dot"/><circle cx="690" cy="140" r="1.2" class="hero-dot"/><circle cx="750" cy="140" r="1.2" class="hero-dot"/><circle cx="810" cy="140" r="1.2" class="hero-dot"/><circle cx="870" cy="140" r="1.2" class="hero-dot"/><circle cx="930" cy="140" r="1.2" class="hero-dot"/><circle cx="990" cy="140" r="1.2" class="hero-dot"/><circle cx="1050" cy="140" r="1.2" class="hero-dot"/><circle cx="1110" cy="140" r="1.2" class="hero-dot"/><circle cx="1170" cy="140" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="210" r="1.2" class="hero-dot"/><circle cx="90" cy="210" r="1.2" class="hero-dot"/><circle cx="150" cy="210" r="1.2" class="hero-dot"/><circle cx="210" cy="210" r="1.2" class="hero-dot"/><circle cx="270" cy="210" r="1.2" class="hero-dot"/><circle cx="330" cy="210" r="1.2" class="hero-dot"/><circle cx="390" cy="210" r="1.2" class="hero-dot"/><circle cx="450" cy="210" r="1.2" class="hero-dot"/><circle cx="510" cy="210" r="1.2" class="hero-dot"/><circle cx="570" cy="210" r="1.2" class="hero-dot"/><circle cx="630" cy="210" r="1.2" class="hero-dot"/><circle cx="690" cy="210" r="1.2" class="hero-dot"/><circle cx="750" cy="210" r="1.2" class="hero-dot"/><circle cx="810" cy="210" r="1.2" class="hero-dot"/><circle cx="870" cy="210" r="1.2" class="hero-dot"/><circle cx="930" cy="210" r="1.2" class="hero-dot"/><circle cx="990" cy="210" r="1.2" class="hero-dot"/><circle cx="1050" cy="210" r="1.2" class="hero-dot"/><circle cx="1110" cy="210" r="1.2" class="hero-dot"/><circle cx="1170" cy="210" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="280" r="1.2" class="hero-dot"/><circle cx="90" cy="280" r="1.2" class="hero-dot"/><circle cx="150" cy="280" r="1.2" class="hero-dot"/><circle cx="210" cy="280" r="1.2" class="hero-dot"/><circle cx="270" cy="280" r="1.2" class="hero-dot"/><circle cx="330" cy="280" r="1.2" class="hero-dot"/><circle cx="390" cy="280" r="1.2" class="hero-dot"/><circle cx="450" cy="280" r="1.2" class="hero-dot"/><circle cx="510" cy="280" r="1.2" class="hero-dot"/><circle cx="570" cy="280" r="1.2" class="hero-dot"/><circle cx="630" cy="280" r="1.2" class="hero-dot"/><circle cx="690" cy="280" r="1.2" class="hero-dot"/><circle cx="750" cy="280" r="1.2" class="hero-dot"/><circle cx="810" cy="280" r="1.2" class="hero-dot"/><circle cx="870" cy="280" r="1.2" class="hero-dot"/><circle cx="930" cy="280" r="1.2" class="hero-dot"/><circle cx="990" cy="280" r="1.2" class="hero-dot"/><circle cx="1050" cy="280" r="1.2" class="hero-dot"/><circle cx="1110" cy="280" r="1.2" class="hero-dot"/><circle cx="1170" cy="280" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="350" r="1.2" class="hero-dot"/><circle cx="90" cy="350" r="1.2" class="hero-dot"/><circle cx="150" cy="350" r="1.2" class="hero-dot"/><circle cx="210" cy="350" r="1.2" class="hero-dot"/><circle cx="270" cy="350" r="1.2" class="hero-dot"/><circle cx="330" cy="350" r="1.2" class="hero-dot"/><circle cx="390" cy="350" r="1.2" class="hero-dot"/><circle cx="450" cy="350" r="1.2" class="hero-dot"/><circle cx="510" cy="350" r="1.2" class="hero-dot"/><circle cx="570" cy="350" r="1.2" class="hero-dot"/><circle cx="630" cy="350" r="1.2" class="hero-dot"/><circle cx="690" cy="350" r="1.2" class="hero-dot"/><circle cx="750" cy="350" r="1.2" class="hero-dot"/><circle cx="810" cy="350" r="1.2" class="hero-dot"/><circle cx="870" cy="350" r="1.2" class="hero-dot"/><circle cx="930" cy="350" r="1.2" class="hero-dot"/><circle cx="990" cy="350" r="1.2" class="hero-dot"/><circle cx="1050" cy="350" r="1.2" class="hero-dot"/><circle cx="1110" cy="350" r="1.2" class="hero-dot"/><circle cx="1170" cy="350" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="420" r="1.2" class="hero-dot"/><circle cx="90" cy="420" r="1.2" class="hero-dot"/><circle cx="150" cy="420" r="1.2" class="hero-dot"/><circle cx="210" cy="420" r="1.2" class="hero-dot"/><circle cx="270" cy="420" r="1.2" class="hero-dot"/><circle cx="330" cy="420" r="1.2" class="hero-dot"/><circle cx="390" cy="420" r="1.2" class="hero-dot"/><circle cx="450" cy="420" r="1.2" class="hero-dot"/><circle cx="510" cy="420" r="1.2" class="hero-dot"/><circle cx="570" cy="420" r="1.2" class="hero-dot"/><circle cx="630" cy="420" r="1.2" class="hero-dot"/><circle cx="690" cy="420" r="1.2" class="hero-dot"/><circle cx="750" cy="420" r="1.2" class="hero-dot"/><circle cx="810" cy="420" r="1.2" class="hero-dot"/><circle cx="870" cy="420" r="1.2" class="hero-dot"/><circle cx="930" cy="420" r="1.2" class="hero-dot"/><circle cx="990" cy="420" r="1.2" class="hero-dot"/><circle cx="1050" cy="420" r="1.2" class="hero-dot"/><circle cx="1110" cy="420" r="1.2" class="hero-dot"/><circle cx="1170" cy="420" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="490" r="1.2" class="hero-dot"/><circle cx="90" cy="490" r="1.2" class="hero-dot"/><circle cx="150" cy="490" r="1.2" class="hero-dot"/><circle cx="210" cy="490" r="1.2" class="hero-dot"/><circle cx="270" cy="490" r="1.2" class="hero-dot"/><circle cx="330" cy="490" r="1.2" class="hero-dot"/><circle cx="390" cy="490" r="1.2" class="hero-dot"/><circle cx="450" cy="490" r="1.2" class="hero-dot"/><circle cx="510" cy="490" r="1.2" class="hero-dot"/><circle cx="570" cy="490" r="1.2" class="hero-dot"/><circle cx="630" cy="490" r="1.2" class="hero-dot"/><circle cx="690" cy="490" r="1.2" class="hero-dot"/><circle cx="750" cy="490" r="1.2" class="hero-dot"/><circle cx="810" cy="490" r="1.2" class="hero-dot"/><circle cx="870" cy="490" r="1.2" class="hero-dot"/><circle cx="930" cy="490" r="1.2" class="hero-dot"/><circle cx="990" cy="490" r="1.2" class="hero-dot"/><circle cx="1050" cy="490" r="1.2" class="hero-dot"/><circle cx="1110" cy="490" r="1.2" class="hero-dot"/><circle cx="1170" cy="490" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="560" r="1.2" class="hero-dot"/><circle cx="90" cy="560" r="1.2" class="hero-dot"/><circle cx="150" cy="560" r="1.2" class="hero-dot"/><circle cx="210" cy="560" r="1.2" class="hero-dot"/><circle cx="270" cy="560" r="1.2" class="hero-dot"/><circle cx="330" cy="560" r="1.2" class="hero-dot"/><circle cx="390" cy="560" r="1.2" class="hero-dot"/><circle cx="450" cy="560" r="1.2" class="hero-dot"/><circle cx="510" cy="560" r="1.2" class="hero-dot"/><circle cx="570" cy="560" r="1.2" class="hero-dot"/><circle cx="630" cy="560" r="1.2" class="hero-dot"/><circle cx="690" cy="560" r="1.2" class="hero-dot"/><circle cx="750" cy="560" r="1.2" class="hero-dot"/><circle cx="810" cy="560" r="1.2" class="hero-dot"/><circle cx="870" cy="560" r="1.2" class="hero-dot"/><circle cx="930" cy="560" r="1.2" class="hero-dot"/><circle cx="990" cy="560" r="1.2" class="hero-dot"/><circle cx="1050" cy="560" r="1.2" class="hero-dot"/><circle cx="1110" cy="560" r="1.2" class="hero-dot"/><circle cx="1170" cy="560" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="630" r="1.2" class="hero-dot"/><circle cx="90" cy="630" r="1.2" class="hero-dot"/><circle cx="150" cy="630" r="1.2" class="hero-dot"/><circle cx="210" cy="630" r="1.2" class="hero-dot"/><circle cx="270" cy="630" r="1.2" class="hero-dot"/><circle cx="330" cy="630" r="1.2" class="hero-dot"/><circle cx="390" cy="630" r="1.2" class="hero-dot"/><circle cx="450" cy="630" r="1.2" class="hero-dot"/><circle cx="510" cy="630" r="1.2" class="hero-dot"/><circle cx="570" cy="630" r="1.2" class="hero-dot"/><circle cx="630" cy="630" r="1.2" class="hero-dot"/><circle cx="690" cy="630" r="1.2" class="hero-dot"/><circle cx="750" cy="630" r="1.2" class="hero-dot"/><circle cx="810" cy="630" r="1.2" class="hero-dot"/><circle cx="870" cy="630" r="1.2" class="hero-dot"/><circle cx="930" cy="630" r="1.2" class="hero-dot"/><circle cx="990" cy="630" r="1.2" class="hero-dot"/><circle cx="1050" cy="630" r="1.2" class="hero-dot"/><circle cx="1110" cy="630" r="1.2" class="hero-dot"/><circle cx="1170" cy="630" r="1.2" class="hero-dot"/>
+            </g>
+            <!-- Accent dots -->
+            <circle cx="330" cy="210" r="1.8" class="hero-dot-accent" style="animation-delay:0s"/>
+            <circle cx="690" cy="140" r="1.8" class="hero-dot-accent" style="animation-delay:1.5s"/>
+            <circle cx="510" cy="350" r="1.8" class="hero-dot-accent" style="animation-delay:0.8s"/>
+            <circle cx="930" cy="280" r="1.8" class="hero-dot-accent" style="animation-delay:2.2s"/>
+            <circle cx="150" cy="420" r="1.8" class="hero-dot-accent" style="animation-delay:1.1s"/>
+            <!-- Snake lines -->
+            <path class="hero-snake" d="M0,210 Q150,210 210,280 T450,280 Q540,280 600,210 T840,210 Q930,210 990,280 T1200,280"/>
+            <path class="hero-snake" d="M0,420 Q120,420 210,490 T450,490 Q570,490 630,420 T870,420 Q960,420 1050,490 T1200,490" style="animation-delay:-4s"/>
+            <path class="hero-snake-2" d="M0,140 Q90,140 150,210 T390,210 Q480,210 540,140 T780,140 Q870,140 930,210 T1200,210"/>
+            <path class="hero-snake-2" d="M0,350 Q150,350 270,420 T510,420 Q630,350 750,350 T990,420 Q1080,420 1200,350" style="animation-delay:-6s"/>
+          </svg>
+        </div>
+        <div class="hero-bg-tile">
+          <svg viewBox="0 0 1200 700" preserveAspectRatio="none">
+            <g>
+              <circle cx="30" cy="70" r="1.2" class="hero-dot"/><circle cx="90" cy="70" r="1.2" class="hero-dot"/><circle cx="150" cy="70" r="1.2" class="hero-dot"/><circle cx="210" cy="70" r="1.2" class="hero-dot"/><circle cx="270" cy="70" r="1.2" class="hero-dot"/><circle cx="330" cy="70" r="1.2" class="hero-dot"/><circle cx="390" cy="70" r="1.2" class="hero-dot"/><circle cx="450" cy="70" r="1.2" class="hero-dot"/><circle cx="510" cy="70" r="1.2" class="hero-dot"/><circle cx="570" cy="70" r="1.2" class="hero-dot"/><circle cx="630" cy="70" r="1.2" class="hero-dot"/><circle cx="690" cy="70" r="1.2" class="hero-dot"/><circle cx="750" cy="70" r="1.2" class="hero-dot"/><circle cx="810" cy="70" r="1.2" class="hero-dot"/><circle cx="870" cy="70" r="1.2" class="hero-dot"/><circle cx="930" cy="70" r="1.2" class="hero-dot"/><circle cx="990" cy="70" r="1.2" class="hero-dot"/><circle cx="1050" cy="70" r="1.2" class="hero-dot"/><circle cx="1110" cy="70" r="1.2" class="hero-dot"/><circle cx="1170" cy="70" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="140" r="1.2" class="hero-dot"/><circle cx="90" cy="140" r="1.2" class="hero-dot"/><circle cx="150" cy="140" r="1.2" class="hero-dot"/><circle cx="210" cy="140" r="1.2" class="hero-dot"/><circle cx="270" cy="140" r="1.2" class="hero-dot"/><circle cx="330" cy="140" r="1.2" class="hero-dot"/><circle cx="390" cy="140" r="1.2" class="hero-dot"/><circle cx="450" cy="140" r="1.2" class="hero-dot"/><circle cx="510" cy="140" r="1.2" class="hero-dot"/><circle cx="570" cy="140" r="1.2" class="hero-dot"/><circle cx="630" cy="140" r="1.2" class="hero-dot"/><circle cx="690" cy="140" r="1.2" class="hero-dot"/><circle cx="750" cy="140" r="1.2" class="hero-dot"/><circle cx="810" cy="140" r="1.2" class="hero-dot"/><circle cx="870" cy="140" r="1.2" class="hero-dot"/><circle cx="930" cy="140" r="1.2" class="hero-dot"/><circle cx="990" cy="140" r="1.2" class="hero-dot"/><circle cx="1050" cy="140" r="1.2" class="hero-dot"/><circle cx="1110" cy="140" r="1.2" class="hero-dot"/><circle cx="1170" cy="140" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="210" r="1.2" class="hero-dot"/><circle cx="90" cy="210" r="1.2" class="hero-dot"/><circle cx="150" cy="210" r="1.2" class="hero-dot"/><circle cx="210" cy="210" r="1.2" class="hero-dot"/><circle cx="270" cy="210" r="1.2" class="hero-dot"/><circle cx="330" cy="210" r="1.2" class="hero-dot"/><circle cx="390" cy="210" r="1.2" class="hero-dot"/><circle cx="450" cy="210" r="1.2" class="hero-dot"/><circle cx="510" cy="210" r="1.2" class="hero-dot"/><circle cx="570" cy="210" r="1.2" class="hero-dot"/><circle cx="630" cy="210" r="1.2" class="hero-dot"/><circle cx="690" cy="210" r="1.2" class="hero-dot"/><circle cx="750" cy="210" r="1.2" class="hero-dot"/><circle cx="810" cy="210" r="1.2" class="hero-dot"/><circle cx="870" cy="210" r="1.2" class="hero-dot"/><circle cx="930" cy="210" r="1.2" class="hero-dot"/><circle cx="990" cy="210" r="1.2" class="hero-dot"/><circle cx="1050" cy="210" r="1.2" class="hero-dot"/><circle cx="1110" cy="210" r="1.2" class="hero-dot"/><circle cx="1170" cy="210" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="280" r="1.2" class="hero-dot"/><circle cx="90" cy="280" r="1.2" class="hero-dot"/><circle cx="150" cy="280" r="1.2" class="hero-dot"/><circle cx="210" cy="280" r="1.2" class="hero-dot"/><circle cx="270" cy="280" r="1.2" class="hero-dot"/><circle cx="330" cy="280" r="1.2" class="hero-dot"/><circle cx="390" cy="280" r="1.2" class="hero-dot"/><circle cx="450" cy="280" r="1.2" class="hero-dot"/><circle cx="510" cy="280" r="1.2" class="hero-dot"/><circle cx="570" cy="280" r="1.2" class="hero-dot"/><circle cx="630" cy="280" r="1.2" class="hero-dot"/><circle cx="690" cy="280" r="1.2" class="hero-dot"/><circle cx="750" cy="280" r="1.2" class="hero-dot"/><circle cx="810" cy="280" r="1.2" class="hero-dot"/><circle cx="870" cy="280" r="1.2" class="hero-dot"/><circle cx="930" cy="280" r="1.2" class="hero-dot"/><circle cx="990" cy="280" r="1.2" class="hero-dot"/><circle cx="1050" cy="280" r="1.2" class="hero-dot"/><circle cx="1110" cy="280" r="1.2" class="hero-dot"/><circle cx="1170" cy="280" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="350" r="1.2" class="hero-dot"/><circle cx="90" cy="350" r="1.2" class="hero-dot"/><circle cx="150" cy="350" r="1.2" class="hero-dot"/><circle cx="210" cy="350" r="1.2" class="hero-dot"/><circle cx="270" cy="350" r="1.2" class="hero-dot"/><circle cx="330" cy="350" r="1.2" class="hero-dot"/><circle cx="390" cy="350" r="1.2" class="hero-dot"/><circle cx="450" cy="350" r="1.2" class="hero-dot"/><circle cx="510" cy="350" r="1.2" class="hero-dot"/><circle cx="570" cy="350" r="1.2" class="hero-dot"/><circle cx="630" cy="350" r="1.2" class="hero-dot"/><circle cx="690" cy="350" r="1.2" class="hero-dot"/><circle cx="750" cy="350" r="1.2" class="hero-dot"/><circle cx="810" cy="350" r="1.2" class="hero-dot"/><circle cx="870" cy="350" r="1.2" class="hero-dot"/><circle cx="930" cy="350" r="1.2" class="hero-dot"/><circle cx="990" cy="350" r="1.2" class="hero-dot"/><circle cx="1050" cy="350" r="1.2" class="hero-dot"/><circle cx="1110" cy="350" r="1.2" class="hero-dot"/><circle cx="1170" cy="350" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="420" r="1.2" class="hero-dot"/><circle cx="90" cy="420" r="1.2" class="hero-dot"/><circle cx="150" cy="420" r="1.2" class="hero-dot"/><circle cx="210" cy="420" r="1.2" class="hero-dot"/><circle cx="270" cy="420" r="1.2" class="hero-dot"/><circle cx="330" cy="420" r="1.2" class="hero-dot"/><circle cx="390" cy="420" r="1.2" class="hero-dot"/><circle cx="450" cy="420" r="1.2" class="hero-dot"/><circle cx="510" cy="420" r="1.2" class="hero-dot"/><circle cx="570" cy="420" r="1.2" class="hero-dot"/><circle cx="630" cy="420" r="1.2" class="hero-dot"/><circle cx="690" cy="420" r="1.2" class="hero-dot"/><circle cx="750" cy="420" r="1.2" class="hero-dot"/><circle cx="810" cy="420" r="1.2" class="hero-dot"/><circle cx="870" cy="420" r="1.2" class="hero-dot"/><circle cx="930" cy="420" r="1.2" class="hero-dot"/><circle cx="990" cy="420" r="1.2" class="hero-dot"/><circle cx="1050" cy="420" r="1.2" class="hero-dot"/><circle cx="1110" cy="420" r="1.2" class="hero-dot"/><circle cx="1170" cy="420" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="490" r="1.2" class="hero-dot"/><circle cx="90" cy="490" r="1.2" class="hero-dot"/><circle cx="150" cy="490" r="1.2" class="hero-dot"/><circle cx="210" cy="490" r="1.2" class="hero-dot"/><circle cx="270" cy="490" r="1.2" class="hero-dot"/><circle cx="330" cy="490" r="1.2" class="hero-dot"/><circle cx="390" cy="490" r="1.2" class="hero-dot"/><circle cx="450" cy="490" r="1.2" class="hero-dot"/><circle cx="510" cy="490" r="1.2" class="hero-dot"/><circle cx="570" cy="490" r="1.2" class="hero-dot"/><circle cx="630" cy="490" r="1.2" class="hero-dot"/><circle cx="690" cy="490" r="1.2" class="hero-dot"/><circle cx="750" cy="490" r="1.2" class="hero-dot"/><circle cx="810" cy="490" r="1.2" class="hero-dot"/><circle cx="870" cy="490" r="1.2" class="hero-dot"/><circle cx="930" cy="490" r="1.2" class="hero-dot"/><circle cx="990" cy="490" r="1.2" class="hero-dot"/><circle cx="1050" cy="490" r="1.2" class="hero-dot"/><circle cx="1110" cy="490" r="1.2" class="hero-dot"/><circle cx="1170" cy="490" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="560" r="1.2" class="hero-dot"/><circle cx="90" cy="560" r="1.2" class="hero-dot"/><circle cx="150" cy="560" r="1.2" class="hero-dot"/><circle cx="210" cy="560" r="1.2" class="hero-dot"/><circle cx="270" cy="560" r="1.2" class="hero-dot"/><circle cx="330" cy="560" r="1.2" class="hero-dot"/><circle cx="390" cy="560" r="1.2" class="hero-dot"/><circle cx="450" cy="560" r="1.2" class="hero-dot"/><circle cx="510" cy="560" r="1.2" class="hero-dot"/><circle cx="570" cy="560" r="1.2" class="hero-dot"/><circle cx="630" cy="560" r="1.2" class="hero-dot"/><circle cx="690" cy="560" r="1.2" class="hero-dot"/><circle cx="750" cy="560" r="1.2" class="hero-dot"/><circle cx="810" cy="560" r="1.2" class="hero-dot"/><circle cx="870" cy="560" r="1.2" class="hero-dot"/><circle cx="930" cy="560" r="1.2" class="hero-dot"/><circle cx="990" cy="560" r="1.2" class="hero-dot"/><circle cx="1050" cy="560" r="1.2" class="hero-dot"/><circle cx="1110" cy="560" r="1.2" class="hero-dot"/><circle cx="1170" cy="560" r="1.2" class="hero-dot"/>
+              <circle cx="30" cy="630" r="1.2" class="hero-dot"/><circle cx="90" cy="630" r="1.2" class="hero-dot"/><circle cx="150" cy="630" r="1.2" class="hero-dot"/><circle cx="210" cy="630" r="1.2" class="hero-dot"/><circle cx="270" cy="630" r="1.2" class="hero-dot"/><circle cx="330" cy="630" r="1.2" class="hero-dot"/><circle cx="390" cy="630" r="1.2" class="hero-dot"/><circle cx="450" cy="630" r="1.2" class="hero-dot"/><circle cx="510" cy="630" r="1.2" class="hero-dot"/><circle cx="570" cy="630" r="1.2" class="hero-dot"/><circle cx="630" cy="630" r="1.2" class="hero-dot"/><circle cx="690" cy="630" r="1.2" class="hero-dot"/><circle cx="750" cy="630" r="1.2" class="hero-dot"/><circle cx="810" cy="630" r="1.2" class="hero-dot"/><circle cx="870" cy="630" r="1.2" class="hero-dot"/><circle cx="930" cy="630" r="1.2" class="hero-dot"/><circle cx="990" cy="630" r="1.2" class="hero-dot"/><circle cx="1050" cy="630" r="1.2" class="hero-dot"/><circle cx="1110" cy="630" r="1.2" class="hero-dot"/><circle cx="1170" cy="630" r="1.2" class="hero-dot"/>
+            </g>
+            <circle cx="330" cy="210" r="1.8" class="hero-dot-accent" style="animation-delay:0s"/>
+            <circle cx="690" cy="140" r="1.8" class="hero-dot-accent" style="animation-delay:1.5s"/>
+            <circle cx="510" cy="350" r="1.8" class="hero-dot-accent" style="animation-delay:0.8s"/>
+            <circle cx="930" cy="280" r="1.8" class="hero-dot-accent" style="animation-delay:2.2s"/>
+            <circle cx="150" cy="420" r="1.8" class="hero-dot-accent" style="animation-delay:1.1s"/>
+            <path class="hero-snake" d="M0,210 Q150,210 210,280 T450,280 Q540,280 600,210 T840,210 Q930,210 990,280 T1200,280"/>
+            <path class="hero-snake" d="M0,420 Q120,420 210,490 T450,490 Q570,490 630,420 T870,420 Q960,420 1050,490 T1200,490" style="animation-delay:-4s"/>
+            <path class="hero-snake-2" d="M0,140 Q90,140 150,210 T390,210 Q480,210 540,140 T780,140 Q870,140 930,210 T1200,210"/>
+            <path class="hero-snake-2" d="M0,350 Q150,350 270,420 T510,420 Q630,350 750,350 T990,420 Q1080,420 1200,350" style="animation-delay:-6s"/>
+          </svg>
+        </div>
+      </div>
+    </div>
     <div class="container">
-      <div class="badge">Open source &middot; MIT licensed</div>
-      <h1>Stop Supabase from<br /><span class="accent">pausing your projects</span></h1>
-      <p class="subtitle">
+      <div class="hero-badge">
+        <span class="hero-badge-icon"><span class="hero-badge-dot"></span></span>
+        Open source &middot; MIT licensed
+      </div>
+      <h1>Stop Supabase from<br><span class="accent">pausing your projects</span></h1>
+      <p class="hero-desc">
         A tiny CLI that pings your free-tier Supabase databases on a schedule so they never auto-pause after 7 days of inactivity.
       </p>
-      <div class="cta-row">
-        <a href="https://github.com/amo95/supawake" class="btn btn-primary">View on GitHub</a>
-        <a href="#how-it-works" class="btn btn-secondary">How it works</a>
+      <div class="hero-actions">
+        <a href="https://www.npmjs.com/package/supawake" class="btn btn-primary">
+          <svg viewBox="0 0 256 256" width="16" height="16" fill="currentColor"><path d="M80,176a8,8,0,0,1,8-8h24V96a8,8,0,0,1,16,0v72h24a8,8,0,0,1,0,16H88A8,8,0,0,1,80,176Zm-24-8V40a8,8,0,0,0-16,0V168a8,8,0,0,0,16,0Zm160,0V40a8,8,0,0,0-16,0V168a8,8,0,0,0,16,0Zm-48,0V40a8,8,0,0,0-16,0V168a8,8,0,0,0,16,0ZM40,200a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"/></svg>
+          Install from npm
+        </a>
+        <a href="#how-it-works" class="btn btn-ghost">
+          <svg viewBox="0 0 256 256" width="16" height="16" fill="currentColor"><path opacity="0.2" d="M128,32,96,96H32l80,80-32,48h96l-32-48,80-80H160Z"/><path d="M205.66,90.34l-56-56a8,8,0,0,0-11.32,0l-56,56A8,8,0,0,0,88,104h33.86l-42.08,75.75a8,8,0,0,0,13.31,8.89L128,138.66l34.91,50a8,8,0,1,0,13.09-9.18L137.46,120H168a8,8,0,0,0,5.66-13.66ZM156.69,88H99.31L128,59.31Z"/></svg>
+          How it works
+        </a>
       </div>
-      <div class="install-box">
-        <code>npm install -g supawake</code>
-        <button class="copy-btn" onclick="navigator.clipboard.writeText('npm install -g supawake');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)">Copy</button>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="problem">
-    <div class="container">
-      <h2>The problem</h2>
-      <p>
-        Supabase pauses free-tier projects after roughly 7 days of inactivity. Your side project, demo, or portfolio app goes down, and users see errors. Unpausing requires logging into the dashboard manually and waiting for the database to restart.
-      </p>
-      <p>
-        <strong style="color: var(--text)">supawake</strong> fixes this with a single scheduled HTTP request. It hits the Supabase REST API using your API key, which counts as activity and keeps your project alive &mdash; forever.
-      </p>
-    </div>
-  </section>
-
-  <section class="section" id="features">
-    <div class="container">
-      <h2>Features</h2>
-      <div class="features">
-        <div class="feature-card">
-          <div class="feature-icon">&#9201;</div>
-          <h3>Scheduled pinging</h3>
-          <p>Run continuously with a cron schedule, or one-shot from CI. Default: every 3 days.</p>
+      <div class="terminal">
+        <div class="terminal-bar">
+          <span class="terminal-dot"></span>
+          <span class="terminal-dot"></span>
+          <span class="terminal-dot"></span>
         </div>
-        <div class="feature-card">
-          <div class="feature-icon">&#128202;</div>
-          <h3>Multi-project</h3>
-          <p>Manage unlimited Supabase projects from a single config file.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">&#128276;</div>
-          <h3>Failure alerts</h3>
-          <p>Optional webhook notifications (Slack, Discord, ntfy.sh) when a ping fails.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">&#9881;</div>
-          <h3>GitHub Actions ready</h3>
-          <p>Includes a workflow template. Let GitHub run your pings for free &mdash; zero infra needed.</p>
+        <div class="terminal-body">
+          <code><span class="prompt">$</span> npm install -g supawake<span class="terminal-cursor"></span></code>
+          <button class="terminal-copy" onclick="navigator.clipboard.writeText('npm install -g supawake');this.innerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><polyline points=\'20 6 9 17 4 12\'/></svg>';setTimeout(()=>this.innerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><rect width=\'14\' height=\'14\' x=\'8\' y=\'8\' rx=\'2\' ry=\'2\'/><path d=\'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\'/></svg>',2000)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+          </button>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="section" id="how-it-works">
+  <section class="section reveal" id="problem">
+    <div class="section-glow-line"></div>
     <div class="container">
-      <h2>How it works</h2>
-      <div class="steps">
+      <div class="section-eyebrow">The problem</div>
+      <h2>Free-tier databases pause automatically</h2>
+      <p class="section-subtitle">Supabase pauses inactive projects after 7 days. Your side projects, demos, and portfolio apps go offline without warning.</p>
+      <div class="compare-grid">
+        <div class="compare-card without">
+          <div class="compare-card-inner">
+            <div class="compare-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+              Without supawake
+            </div>
+            <h3>Projects go offline</h3>
+            <ul class="compare-list">
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+                Database pauses after 7 days
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+                Users hit errors on your live apps
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+                Manual dashboard restarts each time
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="compare-card with">
+          <div class="compare-card-inner">
+            <div class="compare-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              With supawake
+            </div>
+            <h3>Always online</h3>
+            <ul class="compare-list">
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Scheduled pings keep it alive
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Zero downtime for your users
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Set it once, forget it forever
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section reveal" id="features">
+    <div class="section-glow-line"></div>
+    <!-- Decorative dashed connector -->
+    <svg class="section-deco" style="top:60px;right:40px;width:120px;height:200px;opacity:0.4" viewBox="0 0 120 200">
+      <path d="M0,0 Q60,50 40,100 T120,200" fill="none"/>
+    </svg>
+    <div class="container">
+      <div class="section-eyebrow">Features</div>
+      <h2>Everything you need, nothing you don't</h2>
+      <p class="section-subtitle">Minimal tooling that does one thing well.</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-card-inner">
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 256 256" fill="currentColor"><path opacity="0.2" d="M224,128A96,96,0,1,1,128,32,96,96,0,0,1,224,128Z"/><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm64-88a8,8,0,0,1-8,8H128a8,8,0,0,1-8-8V72a8,8,0,0,1,16,0v48h48A8,8,0,0,1,192,128Z"/></svg>
+            </div>
+            <h3>Scheduled pinging</h3>
+            <p>Run continuously with a cron expression, or fire a one-shot ping from CI. Defaults to every 3 days.</p>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-inner">
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 256 256" fill="currentColor"><path opacity="0.2" d="M112,56v48a8,8,0,0,1-8,8H56a8,8,0,0,1-8-8V56a8,8,0,0,1,8-8h48A8,8,0,0,1,112,56Zm88-8H152a8,8,0,0,0-8,8v48a8,8,0,0,0,8,8h48a8,8,0,0,0,8-8V56A8,8,0,0,0,200,48ZM104,144H56a8,8,0,0,0-8,8v48a8,8,0,0,0,8,8h48a8,8,0,0,0,8-8V152A8,8,0,0,0,104,144Zm96,0H152a8,8,0,0,0-8,8v48a8,8,0,0,0,8,8h48a8,8,0,0,0,8-8V152A8,8,0,0,0,200,144Z"/><path d="M104,40H56A16,16,0,0,0,40,56v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,104,40Zm0,64H56V56h48Zm96-64H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,64H152V56h48Zm-96,32H56a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,104,136Zm0,64H56V152h48Zm96-64H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,200,136Zm0,64H152V152h48Z"/></svg>
+            </div>
+            <h3>Multi-project support</h3>
+            <p>Manage all your Supabase projects from a single config. Add, remove, and list in seconds.</p>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-inner">
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 256 256" fill="currentColor"><path opacity="0.2" d="M208,192H48a8,8,0,0,1-6.88-12C47.71,168.6,56,139.81,56,104a72,72,0,0,1,144,0c0,35.82,8.3,64.6,14.9,76A8,8,0,0,1,208,192Z"/><path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z"/></svg>
+            </div>
+            <h3>Failure alerts</h3>
+            <p>Get notified via Slack, Discord, or ntfy.sh push notifications when a ping fails.</p>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-card-inner">
+            <div class="feature-icon-wrap">
+              <svg viewBox="0 0 256 256" fill="currentColor"><path opacity="0.2" d="M224,72V184a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V72a16,16,0,0,1,16-16H208A16,16,0,0,1,224,72Z"/><path d="M208,48H48A24,24,0,0,0,24,72V184a24,24,0,0,0,24,24H208a24,24,0,0,0,24-24V72A24,24,0,0,0,208,48Zm8,136a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V72a8,8,0,0,1,8-8H208a8,8,0,0,1,8,8Zm-32-80v8a8,8,0,0,1-16,0v-8H152a8,8,0,0,1-8-8V88a8,8,0,0,1,16,0v8h16V88a8,8,0,0,1,16,0Zm-72,48v8a8,8,0,0,1-16,0v-8H80a8,8,0,0,1-8-8V136a8,8,0,0,1,16,0v8h16v-8a8,8,0,0,1,16,0v8A8,8,0,0,1,112,152Zm-48-48v8a8,8,0,0,1-16,0v-8H56V96a8,8,0,0,1,16,0v8H80V96a8,8,0,0,1,16,0v8A8,8,0,0,1,88,112Z"/></svg>
+            </div>
+            <h3>GitHub Actions ready</h3>
+            <p>Copy the included workflow template and let GitHub run pings for free. Zero infrastructure.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section reveal" id="how-it-works">
+    <div class="section-glow-line"></div>
+    <svg class="section-deco" style="top:80px;left:20px;width:80px;height:300px;opacity:0.3" viewBox="0 0 80 300">
+      <path d="M40,0 L40,100 Q40,140 60,160 L60,300" fill="none"/>
+    </svg>
+    <div class="container">
+      <div class="section-eyebrow">How it works</div>
+      <h2>Three steps, two minutes</h2>
+      <p class="section-subtitle">No config files to write by hand. The CLI handles everything interactively.</p>
+      <div class="steps-container">
+        <div class="steps-line"></div>
         <div class="step">
-          <div class="step-num">1</div>
-          <div class="step-content">
+          <div class="step-marker">1</div>
+          <div class="step-body">
             <h3>Add your projects</h3>
-            <p>Run <code>supawake add</code> and enter your project URL and API key.</p>
+            <p>Run <code>supawake add</code> and enter your Supabase project URL and API key.</p>
           </div>
         </div>
         <div class="step">
-          <div class="step-num">2</div>
-          <div class="step-content">
+          <div class="step-marker">2</div>
+          <div class="step-body">
             <h3>Verify connectivity</h3>
-            <p>Run <code>supawake status</code> to confirm your projects are reachable.</p>
+            <p>Run <code>supawake status</code> to confirm all projects are reachable.</p>
           </div>
         </div>
         <div class="step">
-          <div class="step-num">3</div>
-          <div class="step-content">
+          <div class="step-marker">3</div>
+          <div class="step-body">
             <h3>Schedule pings</h3>
-            <p>Use <code>supawake start</code> locally, or set up the GitHub Action to run it for free.</p>
+            <p>Use <code>supawake start</code> locally, or deploy the GitHub Action for hands-free operation.</p>
           </div>
         </div>
       </div>
 
-      <div class="code-block">
-<pre><span class="comment"># Add a project</span>
-<span class="cmd">supawake add</span>
+      <div class="code-window">
+        <div class="code-window-bar">
+          <span></span><span></span><span></span>
+        </div>
+<pre><span class="c"># Add a project interactively</span>
+<span class="g">$ supawake add</span>
 
-<span class="comment"># Check status</span>
-<span class="cmd">supawake status</span>
+<span class="c"># Check which projects are reachable</span>
+<span class="g">$ supawake status</span>
 
-<span class="comment"># Ping all projects once</span>
-<span class="cmd">supawake ping</span>
+<span class="c"># Ping all projects once</span>
+<span class="g">$ supawake ping</span>
 
-<span class="comment"># Run on a schedule (every 3 days)</span>
-<span class="cmd">supawake start</span></pre>
+<span class="c"># Run on a schedule (every 3 days at midnight)</span>
+<span class="g">$ supawake start</span></pre>
       </div>
 
-      <div class="gh-action-box">
-        <h3>&#128640; Recommended: run with GitHub Actions</h3>
-        <p>
-          Create a private repo with one workflow file, store your config as a secret, and GitHub will ping your projects every 3 days for free. No server, no Docker, no cron on your laptop.
-          <a href="https://github.com/amo95/supawake#running-on-github-actions" style="color: var(--accent)">See setup instructions &rarr;</a>
-        </p>
+      <div class="callout">
+        <div class="callout-inner">
+          <div class="callout-icon">
+            <svg viewBox="0 0 256 256" fill="currentColor"><path opacity="0.2" d="M216,104v8a88,88,0,0,1-88,88H40V112a88,88,0,0,1,88-88h8A80,80,0,0,1,216,104Z"/><path d="M128,16A88.1,88.1,0,0,0,40,104v96a8,8,0,0,0,8,8h80a88,88,0,0,0,0-176Zm0,160H56V104a72,72,0,1,1,72,72Zm37.66-101.66a8,8,0,0,1,0,11.32l-48,48a8,8,0,0,1-11.32-11.32l48-48A8,8,0,0,1,165.66,74.34ZM104,100a12,12,0,1,1-12-12A12,12,0,0,1,104,100Zm72,40a12,12,0,1,1-12-12A12,12,0,0,1,176,140Z"/></svg>
+          </div>
+          <div>
+            <h3>Recommended: use GitHub Actions</h3>
+            <p>Create a private repo with a single workflow file, store your config as an encrypted secret, and GitHub will ping your projects every 3 days for free. No servers, no containers, no laptop cron.
+              <a href="https://github.com/amo95/supawake#running-on-github-actions">View setup guide</a>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="section">
+  <section class="section reveal" id="cli">
     <div class="container">
-      <h2>CLI reference</h2>
-      <div class="code-block">
-<pre><span class="cmd">supawake add</span>              <span class="comment"># Add a Supabase project (interactive)</span>
-<span class="cmd">supawake remove</span> &lt;name&gt;   <span class="comment"># Remove a project by name</span>
-<span class="cmd">supawake list</span>             <span class="comment"># List all configured projects</span>
-<span class="cmd">supawake ping</span>             <span class="comment"># Ping all projects once</span>
-<span class="cmd">supawake start</span>            <span class="comment"># Continuous pinging on a schedule</span>
-<span class="cmd">supawake status</span>           <span class="comment"># Check which projects are reachable</span></pre>
-      </div>
+      <div class="section-eyebrow">CLI reference</div>
+      <h2>Six commands, zero complexity</h2>
+      <p class="section-subtitle">No flags to memorize. Just the essentials.</p>
+      <table class="cli-table">
+        <tr>
+          <td>supawake add</td>
+          <td>Add a Supabase project interactively</td>
+        </tr>
+        <tr>
+          <td>supawake remove &lt;name&gt;</td>
+          <td>Remove a configured project by name</td>
+        </tr>
+        <tr>
+          <td>supawake list</td>
+          <td>List all configured projects</td>
+        </tr>
+        <tr>
+          <td>supawake ping</td>
+          <td>Ping all projects once and exit</td>
+        </tr>
+        <tr>
+          <td>supawake start</td>
+          <td>Continuously ping on a cron schedule</td>
+        </tr>
+        <tr>
+          <td>supawake status</td>
+          <td>Check which projects are currently reachable</td>
+        </tr>
+      </table>
     </div>
   </section>
 
   <footer>
     <div class="container">
-      <p>
-        Built by <a href="https://github.com/amo95">amo95</a> &middot;
-        <a href="https://github.com/amo95/supawake">GitHub</a> &middot;
-        MIT License
-      </p>
+      <p>Built by <a href="https://github.com/amo95">amo95</a></p>
+      <div class="footer-links">
+        <a href="https://www.npmjs.com/package/supawake">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1.763 0C.786 0 0 .786 0 1.763v20.474C0 23.214.786 24 1.763 24h20.474c.977 0 1.763-.786 1.763-1.763V1.763C24 .786 23.214 0 22.237 0H1.763zM5.13 5.323h13.74v13.04H16.5V7.694H12.1v10.67H5.13V5.323z"/></svg>
+          npm
+        </a>
+        <a href="https://github.com/amo95/supawake">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          GitHub
+        </a>
+        <a href="#">MIT License</a>
+      </div>
     </div>
   </footer>
+
+  <script>
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+
+    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+
+    document.querySelectorAll('.feature-card, .compare-card, .step').forEach((el, i) => {
+      el.classList.add('reveal');
+      el.style.transitionDelay = `${i * 0.07}s`;
+      io.observe(el);
+    });
+
+    document.querySelectorAll('a[href^="#"]').forEach((a) => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const t = document.querySelector(a.getAttribute('href'));
+        if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // Dismiss skeleton loader
+    window.addEventListener('load', () => {
+      const sk = document.getElementById('skeleton');
+      if (sk) {
+        sk.classList.add('hidden');
+        setTimeout(() => sk.remove(), 500);
+      }
+    });
+
+    // Parallax scroll — fade hero background on scroll
+    const heroBg = document.querySelector('.hero-bg');
+    window.addEventListener('scroll', () => {
+      if (heroBg) {
+        heroBg.style.opacity = Math.max(0, 1 - window.scrollY / 500);
+      }
+    }, { passive: true });
+  </script>
 
 </body>
 </html>
