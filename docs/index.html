@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>supawake — Keep your Supabase projects alive</title>
+  <meta name="description" content="A tiny CLI tool that pings your free-tier Supabase databases on a schedule so they never auto-pause." />
+  <meta property="og:title" content="supawake — Keep your Supabase projects alive" />
+  <meta property="og:description" content="A tiny CLI that prevents Supabase free-tier auto-pause by pinging your databases on a schedule." />
+  <meta property="og:type" content="website" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --border: #2a2a2a;
+      --text: #e5e5e5;
+      --text-muted: #888;
+      --accent: #3ecf8e;
+      --accent-dim: #2a9d6a;
+      --code-bg: #1a1a2e;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Nav */
+    nav {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    nav .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-left: 24px;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    /* Hero */
+    .hero {
+      padding: 100px 0 80px;
+      text-align: center;
+    }
+    .badge {
+      display: inline-block;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.8rem;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+      line-height: 1.1;
+    }
+    h1 .accent { color: var(--accent); }
+    .subtitle {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 520px;
+      margin: 0 auto 40px;
+    }
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+    .btn-primary:hover { background: #4ee09e; }
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Install snippet */
+    .install-box {
+      margin: 48px auto 0;
+      max-width: 420px;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .install-box code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.9rem;
+      color: var(--accent);
+    }
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Problem / Solution */
+    .section {
+      padding: 60px 0;
+      border-top: 1px solid var(--border);
+    }
+    .section h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+    .section p {
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      font-size: 1rem;
+    }
+
+    /* Features grid */
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 32px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      transition: border-color 0.2s;
+    }
+    .feature-card:hover { border-color: var(--accent-dim); }
+    .feature-icon {
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+    }
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .feature-card p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0;
+    }
+
+    /* Code blocks */
+    .code-block {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin: 20px 0;
+      overflow-x: auto;
+    }
+    .code-block pre {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .code-block .comment { color: #555; }
+    .code-block .cmd { color: var(--accent); }
+
+    /* How it works */
+    .steps {
+      margin-top: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--accent-dim);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .step-content h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .step-content p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    /* GitHub Actions */
+    .gh-action-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      margin-top: 24px;
+    }
+    .gh-action-box h3 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+    .gh-action-box p {
+      font-size: 0.9rem;
+    }
+
+    /* Footer */
+    footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    footer a:hover { text-decoration: underline; }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      h1 { font-size: 2rem; }
+      .features { grid-template-columns: 1fr; }
+      .hero { padding: 60px 0 48px; }
+      .install-box { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="container">
+      <a href="/" class="logo">supawake</a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="https://github.com/amo95/supawake">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="container">
+      <div class="badge">Open source &middot; MIT licensed</div>
+      <h1>Stop Supabase from<br /><span class="accent">pausing your projects</span></h1>
+      <p class="subtitle">
+        A tiny CLI that pings your free-tier Supabase databases on a schedule so they never auto-pause after 7 days of inactivity.
+      </p>
+      <div class="cta-row">
+        <a href="https://github.com/amo95/supawake" class="btn btn-primary">View on GitHub</a>
+        <a href="#how-it-works" class="btn btn-secondary">How it works</a>
+      </div>
+      <div class="install-box">
+        <code>npm install -g supawake</code>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText('npm install -g supawake');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)">Copy</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="problem">
+    <div class="container">
+      <h2>The problem</h2>
+      <p>
+        Supabase pauses free-tier projects after roughly 7 days of inactivity. Your side project, demo, or portfolio app goes down, and users see errors. Unpausing requires logging into the dashboard manually and waiting for the database to restart.
+      </p>
+      <p>
+        <strong style="color: var(--text)">supawake</strong> fixes this with a single scheduled HTTP request. It hits the Supabase REST API using your API key, which counts as activity and keeps your project alive &mdash; forever.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" id="features">
+    <div class="container">
+      <h2>Features</h2>
+      <div class="features">
+        <div class="feature-card">
+          <div class="feature-icon">&#9201;</div>
+          <h3>Scheduled pinging</h3>
+          <p>Run continuously with a cron schedule, or one-shot from CI. Default: every 3 days.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#128202;</div>
+          <h3>Multi-project</h3>
+          <p>Manage unlimited Supabase projects from a single config file.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#128276;</div>
+          <h3>Failure alerts</h3>
+          <p>Optional webhook notifications (Slack, Discord, ntfy.sh) when a ping fails.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#9881;</div>
+          <h3>GitHub Actions ready</h3>
+          <p>Includes a workflow template. Let GitHub run your pings for free &mdash; zero infra needed.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="how-it-works">
+    <div class="container">
+      <h2>How it works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>Add your projects</h3>
+            <p>Run <code>supawake add</code> and enter your project URL and API key.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>Verify connectivity</h3>
+            <p>Run <code>supawake status</code> to confirm your projects are reachable.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>Schedule pings</h3>
+            <p>Use <code>supawake start</code> locally, or set up the GitHub Action to run it for free.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-block">
+<pre><span class="comment"># Add a project</span>
+<span class="cmd">supawake add</span>
+
+<span class="comment"># Check status</span>
+<span class="cmd">supawake status</span>
+
+<span class="comment"># Ping all projects once</span>
+<span class="cmd">supawake ping</span>
+
+<span class="comment"># Run on a schedule (every 3 days)</span>
+<span class="cmd">supawake start</span></pre>
+      </div>
+
+      <div class="gh-action-box">
+        <h3>&#128640; Recommended: run with GitHub Actions</h3>
+        <p>
+          Create a private repo with one workflow file, store your config as a secret, and GitHub will ping your projects every 3 days for free. No server, no Docker, no cron on your laptop.
+          <a href="https://github.com/amo95/supawake#running-on-github-actions" style="color: var(--accent)">See setup instructions &rarr;</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <h2>CLI reference</h2>
+      <div class="code-block">
+<pre><span class="cmd">supawake add</span>              <span class="comment"># Add a Supabase project (interactive)</span>
+<span class="cmd">supawake remove</span> &lt;name&gt;   <span class="comment"># Remove a project by name</span>
+<span class="cmd">supawake list</span>             <span class="comment"># List all configured projects</span>
+<span class="cmd">supawake ping</span>             <span class="comment"># Ping all projects once</span>
+<span class="cmd">supawake start</span>            <span class="comment"># Continuous pinging on a schedule</span>
+<span class="cmd">supawake status</span>           <span class="comment"># Check which projects are reachable</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>
+        Built by <a href="https://github.com/amo95">amo95</a> &middot;
+        <a href="https://github.com/amo95/supawake">GitHub</a> &middot;
+        MIT License
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>
