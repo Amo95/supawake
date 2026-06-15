@@ -2,7 +2,7 @@ import { PingResult, Project } from './types';
 
 export async function pingProject(project: Project, timeoutMs = 15000): Promise<PingResult> {
   const start = Date.now();
-  const endpoint = project.url.replace(/\/$/, '') + '/rest/v1/';
+  const endpoint = project.url.replace(/\/$/, '') + '/auth/v1/health';
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
