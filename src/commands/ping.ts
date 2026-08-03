@@ -9,7 +9,11 @@ export function formatResult(r: PingResult): string {
   const detail = r.ok
     ? chalk.gray(`${r.status} in ${r.durationMs}ms`)
     : chalk.red(r.error ?? `HTTP ${r.status}`);
-  return `  ${tag} ${chalk.cyan(r.project.name.padEnd(20))} ${detail}`;
+  const retried = r.attempts > 1 ? chalk.yellow(` (${r.attempts} attempts)`) : '';
+  // A pass against the auth fallback says nothing about the database, so never
+  // let it render as an unqualified green tick.
+  const shallow = r.project.table ? '' : chalk.yellow(' — auth only, DB not pinged');
+  return `  ${tag} ${chalk.cyan(r.project.name.padEnd(20))} ${detail}${retried}${shallow}`;
 }
 
 export async function pingCommand(): Promise<void> {
@@ -30,5 +34,16 @@ export async function pingCommand(): Promise<void> {
     process.exitCode = 1;
   } else {
     console.log(chalk.green(`\nAll projects alive.`));
+  }
+
+  const noTable = results.filter((r) => !r.project.table).map((r) => r.project.name);
+  if (noTable.length > 0) {
+    console.log(
+      chalk.yellow(
+        `\nWarning: ${noTable.join(', ')} have no "table" configured, so their pings never reach\n` +
+          `Postgres and will not prevent auto-pause. Set one with "supawake add" or by adding\n` +
+          `"table": "keepalive" to the project in your config.`,
+      ),
+    );
   }
 }

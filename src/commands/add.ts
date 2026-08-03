@@ -25,6 +25,12 @@ export async function addCommand(): Promise<void> {
       message: 'Anon (public) API key:',
       validate: (v: string) => (v.trim().length > 20 ? true : 'Anon key looks too short'),
     },
+    {
+      type: 'text',
+      name: 'table',
+      message: 'Anon-readable table to read on each ping (blank = auth check only):',
+      initial: 'keepalive',
+    },
   ]);
 
   if (!answers.name || !answers.url || !answers.anonKey) {
@@ -32,13 +38,23 @@ export async function addCommand(): Promise<void> {
     return;
   }
 
+  const table = (answers.table ?? '').trim();
+
   try {
     addProject({
       name: answers.name.trim(),
       url: answers.url.trim().replace(/\/$/, ''),
       anonKey: answers.anonKey.trim(),
+      ...(table ? { table } : {}),
     });
     console.log(chalk.green(`✓ Added project "${answers.name}"`));
+    if (!table) {
+      console.log(
+        chalk.yellow(
+          '  No table set — pings will check auth only and will not keep the database awake.',
+        ),
+      );
+    }
   } catch (err) {
     console.error(chalk.red(`✗ ${(err as Error).message}`));
     process.exitCode = 1;
