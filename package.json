@@ -1,6 +1,6 @@
 {
   "name": "supawake",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Keep Supabase free-tier databases active by pinging them periodically to prevent auto-pause.",
   "keywords": [
     "supabase",

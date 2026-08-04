@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import * as fs from 'fs';
+import * as path from 'path';
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { addCommand } from './commands/add';
@@ -8,12 +10,18 @@ import { pingCommand } from './commands/ping';
 import { startCommand } from './commands/start';
 import { statusCommand } from './commands/status';
 
+// Read from package.json rather than hardcoding — a literal here silently goes
+// stale on every release, which is how --version ended up reporting 1.0.0.
+const { version } = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'),
+) as { version: string };
+
 const program = new Command();
 
 program
   .name('supawake')
   .description('Keep Supabase free-tier databases awake by pinging them on a schedule.')
-  .version('1.0.0');
+  .version(version);
 
 program
   .command('add')
